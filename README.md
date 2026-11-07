@@ -46,6 +46,18 @@ curl -X POST http://127.0.0.1:8190/v1/images/generations \
 
 ## 安装
 
+### 方式一：从仓库地址装（推荐）
+
+AstrBot 面板 → 插件 → **添加插件**，粘这一行：
+
+```
+https://github.com/xingluocheng/astrbot_plugin_selfie
+```
+
+装完列表里会出现「大肥鱼的自拍 1.0.0」。
+
+### 方式二：手动
+
 1. 把整个文件夹丢进 `AstrBot/data/plugins/`，重启 AstrBot。
 2. 打开面板 → 插件 → **大肥鱼的自拍** → 配置。
 3. **必填①：主人的 QQ**。留空会退回 AstrBot 管理员判定，而管理员默认是 `astrbot` 这个用户名，永远匹配不上 QQ 号。
