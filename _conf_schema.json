@@ -1,0 +1,110 @@
+{
+  "enabled": {
+    "description": "总开关",
+    "type": "bool",
+    "default": true,
+    "hint": "关掉后完全不生图，指令也不生效。"
+  },
+  "owner_ids": {
+    "description": "① 主人的 QQ（改成你自己的号）",
+    "type": "string",
+    "default": "",
+    "hint": "填你自己的 QQ 号，多个用英文逗号。这一步必须做：留空会退回 AstrBot 管理员判定，而管理员默认是 astrbot 这个用户名，永远匹配不上 QQ 号。"
+  },
+  "bot_ids": {
+    "description": "② 大肥鱼的 QQ（机器人自己的号）",
+    "type": "string",
+    "default": "",
+    "hint": "机器人登录用的那个号。留空 = 自动用协议端当前登录的账号（推荐）。"
+  },
+  "group_enabled": {
+    "description": "③ 允许在群聊里生成图片",
+    "type": "bool",
+    "default": false,
+    "hint": "关掉后只和主人在私聊时才会发自拍；群里一律不发。想在群里也发就打开。"
+  },
+  "lora_step": {
+    "description": "④ 使用第几档 LoRA（默认 12）",
+    "type": "int",
+    "default": 12,
+    "hint": "训练时每轮存一档，档位越高学得越久。12 是实测最像又不僵的一档。改完保存即生效，不用重启。"
+  },
+  "lora_strength": {
+    "description": "⑤ LoRA 权重（默认 0.7）",
+    "type": "float",
+    "default": 0.7,
+    "hint": "0.7 画面自然、更像生活照；0.85~1.0 身份更稳但构图会端着。建议 0.7~0.85。"
+  },
+  "bridge_url": {
+    "description": "⑥ 生图接口地址",
+    "type": "string",
+    "default": "http://127.0.0.1:8190",
+    "hint": "本地 ComfyUI 桥接服务，默认 8190 端口。"
+  },
+  "model_name": {
+    "description": "⑦ 接口里显示的模型名",
+    "type": "string",
+    "default": "dafeiyu",
+    "hint": "只是标签，不影响出图，填什么都行。"
+  },
+  "size": {
+    "description": "出图尺寸",
+    "type": "string",
+    "default": "832x1152",
+    "hint": "宽x高。竖图 832x1152 最像手机自拍；方图 1024x1024 也行。"
+  },
+  "steps": {
+    "description": "采样步数",
+    "type": "int",
+    "default": 28,
+    "hint": "20~32 之间。越高越细但越慢，28 是平衡点。"
+  },
+  "cfg": {
+    "description": "CFG（提示词服从强度）",
+    "type": "float",
+    "default": 5.5,
+    "hint": "Illustrious 系底模建议 5~6，太高会画得发僵。"
+  },
+  "selfie_check_every": {
+    "description": "每多少条消息判断一次要不要发图",
+    "type": "int",
+    "default": 10,
+    "hint": "攒够这个数她才读一遍上下文，判断这次该不该发。太小会烦，太大没机会。"
+  },
+  "cooldown_minutes": {
+    "description": "两次生成图片的最小间隔（分钟）",
+    "type": "int",
+    "default": 30,
+    "hint": "防止刷图。主人明确要求时不受限制。"
+  },
+  "send_probability": {
+    "description": "判断成立后实际生成的概率",
+    "type": "float",
+    "default": 0.8,
+    "hint": "0~1。就算她觉得该发，也留一点不发的余地，别显得太机械。"
+  },
+  "suppress_sticker": {
+    "description": "生图后不发表情包",
+    "type": "bool",
+    "default": true,
+    "hint": "同一轮已经发了图，就把表情包去掉，免得一图一包刷屏。"
+  },
+  "qzone_attach": {
+    "description": "允许空间说说附带生成的图片",
+    "type": "bool",
+    "default": true,
+    "hint": "关掉后空间只用表情包。开启后由主人点单时自己决定要不要图、要什么图。"
+  },
+  "notify_owner": {
+    "description": "生成后私聊通知主人",
+    "type": "bool",
+    "default": false,
+    "hint": "开启后每次自动生成都悄悄给主人发一份。"
+  },
+  "max_keep_images": {
+    "description": "本地最多保留多少张生成图",
+    "type": "int",
+    "default": 200,
+    "hint": "超过就删最旧的，防止占满硬盘。"
+  }
+}
