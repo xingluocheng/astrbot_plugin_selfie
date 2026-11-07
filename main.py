@@ -110,14 +110,21 @@ class SelfiePlugin(Star):
             logger.debug(f"{TAG} 判定成立但随机跳过")
             return
 
+        if self.state.has_flag(umo, "busy", ttl=240):
+            logger.debug(f"{TAG} 正在拍图，跳过本轮自动出图")
+            return
+
         async with self._lock(umo):
             if not owner_direct and self.state.in_cooldown(cooldown):
                 return
+            self.state.set_flag(umo, "busy")
             try:
                 path = await self.make_image(verdict["prompt"], tag="chat")
             except comfy.ComfyError as exc:
                 logger.warning(f"{TAG} 出图失败：{exc}")
                 return
+            finally:
+                self.state.clear_flag(umo, "busy")
             self.state.mark(doing=verdict.get("doing", ""), path=str(path))
             self.state.set_flag(umo, "sent")
             self._our_images.setdefault(umo, set()).add(str(path.name))
@@ -166,6 +173,12 @@ class SelfiePlugin(Star):
     # ------------------------------------------------------------- 出图
     async def make_image(self, prompt: str, tag: str = "selfie") -> Path:
         """生成一张图，返回本地路径。qzone 插件也调这个。"""
+        face = str(self._cfg("face_hint", "") or "").strip()
+        if face and "chubby cheeks" not in prompt.lower():
+            prompt = f"{prompt}, {face}"
+        hint = str(self._cfg("style_hint", "") or "").strip()
+        if hint:
+            prompt = f"{prompt}, {hint}"
         raw = await asyncio.to_thread(
             comfy.generate,
             str(self._cfg("bridge_url", "http://127.0.0.1:8190")),
@@ -253,12 +266,23 @@ class SelfiePlugin(Star):
         if not prompt:
             yield event.plain_result("这会儿没想好拍什么…")
             return
-        yield event.plain_result("等我一下，拍一张。")
-        try:
-            path = await self.make_image(prompt, tag="cmd")
-        except comfy.ComfyError as exc:
-            yield event.plain_result(f"拍失败了：{exc}")
+        if self.state.has_flag(umo, "busy", ttl=240):
+            yield event.plain_result("正在拍呢，等这张出来。")
             return
+
+        yield event.plain_result("等我一下，拍一张。")
+        async with self._lock(umo):
+            if self.state.has_flag(umo, "busy", ttl=240):
+                yield event.plain_result("正在拍呢，等这张出来。")
+                return
+            self.state.set_flag(umo, "busy")
+            try:
+                path = await self.make_image(prompt, tag="cmd")
+            except comfy.ComfyError as exc:
+                yield event.plain_result(f"拍失败了：{exc}")
+                return
+            finally:
+                self.state.clear_flag(umo, "busy")
         self.state.mark(doing="主人在要照片", path=str(path))
         self.state.set_flag(umo, "sent")
         self._our_images.setdefault(umo, set()).add(str(path.name))
