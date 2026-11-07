@@ -124,11 +124,30 @@ class SelfiePlugin(Star):
             logger.info(f"{TAG} 发图：{verdict.get('doing','')}")
 
         doing = verdict.get("doing") or "刚拍了张照"
+        self._tell_diary(event, umo, doing)
         yield event.chain_result([Plain(doing), Image.fromFileSystem(str(path))])
 
         if bool(self._cfg("notify_owner", False)):
             await self._notify_owner(event, path, doing)
 
+    # ------------------------------------------------------------- 日记联动
+    def _tell_diary(self, event: AstrMessageEvent, umo: str, doing: str) -> None:
+        """把「她拍了什么」告诉日记插件，让日记里能写上这件事。"""
+        try:
+            star = self.context.get_registered_star("astrbot_plugin_diary")
+        except Exception:
+            return
+        if star is None:
+            return
+        plugin = getattr(star, "star_cls", None) or star
+        fn = getattr(plugin, "record_selfie", None)
+        if fn is None:
+            return
+        try:
+            uid = str(event.get_sender_id() or "")
+            fn(umo, uid, doing)
+        except Exception as exc:
+            logger.debug(f"{TAG} 通知日记失败：{exc}")
     # ------------------------------------------------------------- 判断
     async def _judge(self, event: AstrMessageEvent, umo: str, owner_direct: bool) -> dict | None:
         lines = self._buffers.get(umo, [])[-12:]
