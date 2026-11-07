@@ -106,5 +106,17 @@
     "type": "int",
     "default": 200,
     "hint": "超过就删最旧的，防止占满硬盘。"
+  },
+  "style_hint": {
+    "description": "画面风格偏好（可留空）",
+    "type": "string",
+    "default": "",
+    "hint": "留空就是不限制风格。填什么都会追加到每张图的提示词后面。"
+  },
+  "face_hint": {
+    "description": "★ 脸部偏好（默认软萌幼态）",
+    "type": "string",
+    "default": "round soft face, chubby cheeks, big round eyes, small nose, tiny mouth, baby face, sparkling eyes",
+    "hint": "每张图都强制带上这段，保证脸一样软萌。想换脸型就改这里。"
   }
 }
