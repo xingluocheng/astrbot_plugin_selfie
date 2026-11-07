@@ -32,8 +32,10 @@ help: |-
   ⑥生图接口地址（默认 http://127.0.0.1:8190）
 
   【版本历史】
+  1.0.1　她拍的照片会同步给日记插件：日记里多一行「（拍了张照片：在窗边看雨）」，
+        只记画面内容，不记提示词和参数
   1.0.0　首个版本：自主判断 + 自写提示词 + ComfyUI 出图 + 表情包抑制 + 空间配图
-version: 1.0.0
+version: 1.0.1
 author: 大肥鱼
 repo: https://github.com/xingluocheng/astrbot_plugin_selfie
 astrbot_version: ">=4.17.0"
