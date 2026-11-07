@@ -30,7 +30,7 @@ help: |-
   ③群聊里允不允许生成图片（默认关）
   ④用第几档 LoRA（默认 12）　⑤权重（默认 0.7）
   ⑥生图接口地址（默认 http://127.0.0.1:8190）
-version: 1.0.1
+version: 1.0.3
 author: 大肥鱼
 repo: https://github.com/xingluocheng/astrbot_plugin_selfie
 astrbot_version: ">=4.17.0"
