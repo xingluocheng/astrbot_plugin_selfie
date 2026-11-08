@@ -5,6 +5,12 @@
     "default": true,
     "hint": "关掉后完全不生图，指令也不生效。"
   },
+  "auto_enabled": {
+    "description": "★ 自动判断（关 = 只在 /自拍 指令时出图）",
+    "type": "bool",
+    "default": false,
+    "hint": "关掉后平时聊天不会自己拍图，也不会影响表情包；只有发 /自拍 才出图。"
+  },
   "owner_ids": {
     "description": "① 主人的 QQ（改成你自己的号）",
     "type": "string",
@@ -116,7 +122,13 @@
   "face_hint": {
     "description": "★ 脸部偏好（默认软萌幼态）",
     "type": "string",
-    "default": "round soft face, chubby cheeks, big round eyes, small nose, tiny mouth, baby face, sparkling eyes",
-    "hint": "每张图都强制带上这段，保证脸一样软萌。想换脸型就改这里。"
+    "default": "soft youthful face, gentle round cheeks, detailed sparkling eyes, eye highlights, small nose, delicate mouth",
+    "hint": "每张图都强制带上这段。别写 chubby cheeks / baby face 这种极端词，会把脸压成简笔 Q 版、眼睛没高光。"
+  },
+  "extra_tags": {
+    "description": "额外提示词（每张图都追加）",
+    "type": "string",
+    "default": "",
+    "hint": "想固定画风或质量词就写这，例如 cinematic lighting, film grain。留空不加。"
   }
 }
