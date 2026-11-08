@@ -32,6 +32,7 @@ def generate(
     steps: int = 28,
     cfg: float = 5.5,
     model: str = "dafeiyu",
+    strength: float = 0.0,
     timeout: int = 600,
 ) -> bytes:
     """向桥接发一次请求，返回 PNG 字节。"""
@@ -47,6 +48,8 @@ def generate(
         "steps": int(steps),
         "cfg": float(cfg),
     }
+    if strength > 0:
+        payload["lora_strength"] = float(strength)
 
     started = time.time()
     try:
