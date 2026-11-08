@@ -21,11 +21,16 @@ JUDGE_SYSTEM = """你是「大肥鱼」，一只蓝发小鲸鱼娘。现在你�
 - 明确姿势、表情、场景、光线
 - 结尾带 masterpiece, best quality, very aesthetic, absurdres
 - 不要出现 mature、adult、tall 这类词，她是幼态少女
+- 不要每张都写 maid 女仆装：只有明确需要时才写，其它场合换成常服、校服、睡衣、外套
+- 景别要变化：约一半用 upper body，其它用 full body / cowboy shot
+- 画面要具体：写到服装细节（领子/下装/袜子/鞋）、手上的动作、场景里 2-3 个物件、光线时间
+- 不要只写「站在房间里」这种空话，要有能画出来的东西
 
 主人最在意脸：要软萌、幼态，不要成熟脸。
 每张提示词都必须带这些脸部描述（英文）：
-- round soft face, chubby cheeks, big round eyes, small nose, tiny mouth, baby face
-- 眼睛要有高光：sparkling eyes
+- soft youthful face, gentle round cheeks, detailed sparkling eyes, eye highlights
+- 眼睛一定要写细节：detailed eyes, beautiful detailed eyes, eye highlights（不要只写 big eyes）
+- 鲸鱼特征每张都要有：fin ears, whale tail（尾巴要能看见，别被衣服或构图挡住）
 - 禁止出现：mature face, sharp chin, long face, mature female, tall
 
 其它按场景自由发挥，不用每张都同一个构图。
@@ -50,7 +55,8 @@ def _extract_json(text: str) -> dict | None:
         return None
 
 
-async def ask_should_send(provider, context_lines: str, trigger: str = "") -> dict:
+async def ask_should_send(provider, context_lines: str, trigger: str = "",
+                          requirement: str = "") -> dict:
     """问模型这次要不要发图。返回 {"send":bool,"doing":str,"prompt":str}"""
     if provider is None:
         return {"send": False, "doing": "", "prompt": ""}
@@ -58,6 +64,19 @@ async def ask_should_send(provider, context_lines: str, trigger: str = "") -> di
     user = f"最近的聊天：\n{context_lines}\n\n"
     if trigger:
         user += f"（触发原因：{trigger}）\n"
+    if requirement:
+        req_block = (
+            "[主人明确要求，必须照做并写细] " + requirement + "\n"
+            "把这条要求展开成具体 tag，至少覆盖四类：\n"
+            "1) 景别与姿态：要全身就写 full body, standing, shoes, legs；"
+            "坐写 sitting on chair，躺写 lying on bed\n"
+            "2) 服装写到细节：款式 + 颜色 + 领子 + 下装 + 袜子 + 鞋 + 配饰。"
+            "例：sailor uniform, navy blue serafuku, white sailor collar, blue ribbon, "
+            "pleated skirt, white knee socks, black loafers。绝对不要写 maid / apron\n"
+            "3) 动作：手在做什么、身体朝向\n"
+            "4) 场景与光线：地点 + 2-3 个具体物件 + 时间光线\n"
+        )
+        user += req_block
     user += "现在决定：要不要发一张自己的照片？按 JSON 回答。"
 
     try:
