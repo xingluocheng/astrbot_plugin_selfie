@@ -84,6 +84,10 @@ class SelfiePlugin(Star):
         if not umo:
             return
 
+        # 只用指令模式：平时聊天不自动拍图（也就不动表情包）
+        if not bool(self._cfg("auto_enabled", False)):
+            return
+
         buf = self._buffers.setdefault(umo, [])
         buf.append(text[:200])
         del buf[:-20]
@@ -156,11 +160,14 @@ class SelfiePlugin(Star):
         except Exception as exc:
             logger.debug(f"{TAG} 通知日记失败：{exc}")
     # ------------------------------------------------------------- 判断
-    async def _judge(self, event: AstrMessageEvent, umo: str, owner_direct: bool) -> dict | None:
+    async def _judge(self, event: AstrMessageEvent, umo: str, owner_direct: bool,
+                     requirement: str = "") -> dict | None:
         lines = self._buffers.get(umo, [])[-12:]
         context_lines = "\n".join(f"- {x}" for x in lines) or "（暂时没什么聊天内容）"
         trigger = "主人直接要照片" if owner_direct else ""
-        verdict = await judge.ask_should_send(self._provider(), context_lines, trigger)
+        verdict = await judge.ask_should_send(
+            self._provider(), context_lines, trigger, requirement
+        )
         if verdict.get("send"):
             logger.info(f"{TAG} 判定发图：{verdict.get('doing','')} | {verdict['prompt'][:60]}")
         return verdict
@@ -171,14 +178,21 @@ class SelfiePlugin(Star):
         return any(w in text for w in words)
 
     # ------------------------------------------------------------- 出图
-    async def make_image(self, prompt: str, tag: str = "selfie") -> Path:
-        """生成一张图，返回本地路径。qzone 插件也调这个。"""
+    async def make_image(self, prompt: str, tag: str = "selfie",
+                         strength: float = 0.0) -> Path:
+        """生成一张图，返回本地路径。qzone 插件也调这个。
+
+        strength > 0 时覆盖配置里的 LoRA 权重（换服装时压低，减轻训练集惯性）。
+        """
         face = str(self._cfg("face_hint", "") or "").strip()
-        if face and "chubby cheeks" not in prompt.lower():
+        if face and face.split(",")[0].strip().lower() not in prompt.lower():
             prompt = f"{prompt}, {face}"
         hint = str(self._cfg("style_hint", "") or "").strip()
         if hint:
             prompt = f"{prompt}, {hint}"
+        extra = str(self._cfg("extra_tags", "") or "").strip()
+        if extra:
+            prompt = f"{prompt}, {extra}"
         raw = await asyncio.to_thread(
             comfy.generate,
             str(self._cfg("bridge_url", "http://127.0.0.1:8190")),
@@ -187,6 +201,7 @@ class SelfiePlugin(Star):
             int(self._cfg("steps", 28)),
             float(self._cfg("cfg", 5.5)),
             str(self._cfg("model_name", "dafeiyu")),
+            float(strength),
         )
         path = comfy.save(raw, self.image_dir, tag=tag)
         keep = int(self._cfg("max_keep_images", 200) or 0)
@@ -213,6 +228,8 @@ class SelfiePlugin(Star):
     @filter.on_decorating_result(priority=60)
     async def strip_sticker(self, event: AstrMessageEvent):
         if not bool(self._cfg("suppress_sticker", True)):
+            return
+        if not bool(self._cfg("auto_enabled", False)):
             return
         umo = getattr(event, "unified_msg_origin", "") or ""
         if not umo or not self.state.has_flag(umo, "sent", ttl=90):
@@ -261,7 +278,9 @@ class SelfiePlugin(Star):
             yield event.plain_result("自拍功能关着。")
             return
         umo = getattr(event, "unified_msg_origin", "") or ""
-        verdict = await self._judge(event, umo, owner_direct=True)
+        raw = getattr(event, "message_str", "") or ""
+        requirement = raw.replace("/自拍", "").replace("自拍", "").strip()
+        verdict = await self._judge(event, umo, owner_direct=True, requirement=requirement)
         prompt = (verdict or {}).get("prompt") or ""
         if not prompt:
             yield event.plain_result("这会儿没想好拍什么…")
@@ -277,9 +296,15 @@ class SelfiePlugin(Star):
                 return
             self.state.set_flag(umo, "busy")
             try:
-                path = await self.make_image(prompt, tag="cmd")
+                outfit_words = ("穿", "服", "裙", "衣", "装")
+                strength = 0.65 if any(w in requirement for w in outfit_words) else 0.0
+                path = await self.make_image(prompt, tag="cmd", strength=strength)
             except comfy.ComfyError as exc:
                 yield event.plain_result(f"拍失败了：{exc}")
+                return
+            except Exception as exc:
+                logger.warning(f"{TAG} 出图异常：{exc}")
+                yield event.plain_result(f"拍失败了：{type(exc).__name__} {exc}")
                 return
             finally:
                 self.state.clear_flag(umo, "busy")
