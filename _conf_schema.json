@@ -5,6 +5,36 @@
     "default": true,
     "hint": "关掉后完全不生图，指令也不生效。"
   },
+  "nsfw_enabled": {
+    "description": "★ 允许生成成人向照片",
+    "type": "bool",
+    "default": true,
+    "hint": "关掉后只拍正常照片：露骨要求会被拒绝，解剖标签也不会加。"
+  },
+  "insert_checkpoint": {
+    "description": "★ 插入类内容用的底模",
+    "type": "string",
+    "default": "hassakuXLIllustrious_v22.safetensors",
+    "hint": "提到假鸡巴/插入/骑乘时自动切到这个底模；日常图片仍用 Illustrious。留空则不切换。"
+  },
+  "nsfw_reject_text": {
+    "description": "关掉成人向后的回复",
+    "type": "string",
+    "default": "这个不拍啦，说点别的嘛",
+    "hint": "主人提出露骨要求、而成人向开关关着时，她就回这句。"
+  },
+  "nsfw_dir": {
+    "description": "成人向图片另存目录",
+    "type": "string",
+    "default": "C:\\Users\\xingluo\\Desktop\\鱼片",
+    "hint": "生成成人向图片时额外复制一份到这里；留空则只存插件目录。"
+  },
+  "ref_use": {
+    "description": "成人向时先上网找参考图",
+    "type": "bool",
+    "default": false,
+    "hint": "打开后成人向出图会先用参考图库里的构图（中景/骑乘等），SDXL 自己画不对的姿势靠这个补。"
+  },
   "auto_enabled": {
     "description": "★ 自动判断（关 = 只在 /自拍 指令时出图）",
     "type": "bool",
@@ -77,6 +107,12 @@
     "default": 10,
     "hint": "攒够这个数她才读一遍上下文，判断这次该不该发。太小会烦，太大没机会。"
   },
+  "context_lines": {
+    "description": "判断时读多少条聊天上下文",
+    "type": "int",
+    "default": 16,
+    "hint": "越多越懂气氛但越费 token。8~24 之间合适。"
+  },
   "cooldown_minutes": {
     "description": "两次生成图片的最小间隔（分钟）",
     "type": "int",
@@ -116,8 +152,14 @@
   "style_hint": {
     "description": "画面风格偏好（可留空）",
     "type": "string",
-    "default": "",
-    "hint": "留空就是不限制风格。填什么都会追加到每张图的提示词后面。"
+    "default": "anime style, vivid colors, soft cel shading, glossy highlights, detailed hair shading, high quality illustration",
+    "hint": "NoobAI 底模下用这套词保持原来的画风；想换风格就改这里。"
+  },
+  "detail_tags": {
+    "description": "★ 丝袜 / 脚的细节词（每张图都追加）",
+    "type": "string",
+    "default": "detailed nylons, sheer fabric over skin, glossy sheen, fabric wrinkles at knee and ankle, reinforced toe, seam line, detailed feet, five separated toes, toe pads, wrinkles on sole, high arch, heel, ankle bones",
+    "hint": "想让丝袜质感、脚趾、足弓更细就改这里；清空则不追加。"
   },
   "face_hint": {
     "description": "★ 脸部偏好（默认软萌幼态）",
@@ -130,5 +172,65 @@
     "type": "string",
     "default": "",
     "hint": "想固定画风或质量词就写这，例如 cinematic lighting, film grain。留空不加。"
+  },
+  "anatomy_tags": {
+    "description": "裸体/性行为时自动追加的解剖标签",
+    "type": "string",
+    "default": "uncensored, pussy, clitoris, labia, pussy visible, unobstructed",
+    "hint": "裸体/性行为时自动追加的「身体」标签，不含玩具。玩具另见 toy_tags。"
+  },
+  "toy_tags": {
+    "description": "★ 玩具标签（只有提到玩具时才加）",
+    "type": "string",
+    "default": "dildo in pussy, penetration, holding dildo, sex toy",
+    "hint": "只有主人说要玩具 / 假鸡巴 / 插入时才会追加；不提就不加。"
+  },
+  "edit_denoise": {
+    "description": "在上一张图上改的强度（0.3~0.6）",
+    "type": "float",
+    "default": 0.45,
+    "hint": "越小越像原图，越大改得越多。说「和上一张一样」时用它。"
+  },
+  "ref_denoise": {
+    "description": "参考图改动幅度",
+    "type": "float",
+    "default": 0.55,
+    "hint": "0.5 保留参考构图多一些；0.62 更听提示词但插入关系可能散。"
+  },
+  "video_enabled": {
+    "description": "视频功能",
+    "type": "bool",
+    "default": true,
+    "hint": "/视频 指令的总开关。"
+  },
+  "video_url": {
+    "description": "视频接口",
+    "type": "string",
+    "default": "http://127.0.0.1:8190/v1/videos",
+    "hint": "桥接的视频接口。"
+  },
+  "video_duration": {
+    "description": "视频时长（秒）",
+    "type": "int",
+    "default": 5,
+    "hint": "5 秒约 120 帧，再长会明显变慢。"
+  },
+  "video_steps": {
+    "description": "视频步数",
+    "type": "int",
+    "default": 8,
+    "hint": "配 turbo LoRA 用 8 步就够。"
+  },
+  "video_width": {
+    "description": "视频宽",
+    "type": "int",
+    "default": 928,
+    "hint": "16:9 时宽 928 高 544。"
+  },
+  "video_height": {
+    "description": "视频高",
+    "type": "int",
+    "default": 544,
+    "hint": ""
   }
 }
