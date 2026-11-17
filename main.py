@@ -769,6 +769,18 @@ class SelfiePlugin(Star):
             requirement = "same camera angle, subtle movement, breathing"
         self.state.data.pop(key, None)
 
+        # 描述交给判断模型，让它自己补全成完整的视频提示词
+        try:
+            verdict = await self._judge(event, umo, owner_direct=True,
+                                        requirement=f"拍视频：{requirement}")
+        except Exception as exc:
+            logger.warning(f"{TAG} 视频提示词扩写失败，用原话：{exc}")
+            verdict = {}
+        video_prompt = str((verdict or {}).get("prompt") or "").strip() or requirement
+        if "same camera angle" not in video_prompt.lower():
+            video_prompt = f"{video_prompt}, same camera angle, steady framing, subtle motion"
+        logger.info(f"{TAG} 视频提示词：{video_prompt[:120]}")
+
         yield event.plain_result("好，本鲸准备拍，等几分钟。")
         async with self._lock(umo):
             self.state.set_flag(umo, "busy")
@@ -779,14 +791,14 @@ class SelfiePlugin(Star):
                     if last and Path(last).exists():
                         first = Path(last)
                 if first is None:
-                    first = await self.make_image(requirement, tag="vfirst")
+                    first = await self.make_image(video_prompt, tag="vfirst")
             except comfy.ComfyError as exc:
                 self.state.clear_flag(umo, "busy")
                 yield event.plain_result(f"首帧没出来：{exc}")
                 return
             self.state.clear_flag(umo, "busy")
 
-        video = await self.make_video(requirement, first)
+        video = await self.make_video(video_prompt, first)
         if not video:
             yield event.plain_result("视频没生成出来，看看桥接日志。")
             return
