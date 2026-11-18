@@ -289,6 +289,16 @@ class SelfiePlugin(Star):
         if not umo:
             return
 
+        # /视频 的追问：这里等 1/2 + 描述（必须在缓冲之前处理）
+        pending_key = f"video_pending:{umo}"
+        if self.state.data.get(pending_key):
+            logger.info(f"{TAG} 收到视频追问回复：{text[:30]}")
+            async for item in self._handle_video_answer(event, umo, text):
+                yield item
+            return
+        if text.strip()[:1] in ("1", "2") and len(text.strip()) <= 60:
+            logger.info(f"{TAG} 收到 1/2 但没有挂起的视频追问（umo={umo}）")
+
         # 缓冲里带上说话人，判断时才知道谁说了什么
         # 注意：这里必须在「自动判断开关」之前执行——关掉自动模式也要记聊天，
         # 否则 /自拍 看不到上下文，只能按训练集的老样子出图。
@@ -744,10 +754,27 @@ class SelfiePlugin(Star):
         raw = getattr(event, "message_str", "") or ""
         requirement = raw.replace("/视频", "").strip()
 
+        # 支持一步到位：/视频 1 描述  或  /视频 2 描述
+        head = requirement[:1]
+        if head in ("1", "2"):
+            rest = requirement[1:].strip(" ，,、:：")
+            self.state.data[f"video_pending:{umo}"] = {
+                "ts": time.time(), "requirement": rest,
+            }
+            logger.info(f"{TAG} 一步到位：{head} {rest[:40]}")
+            async for item in self._handle_video_answer(event, umo, requirement):
+                yield item
+            return
+
         self.state.data[f"video_pending:{umo}"] = {
             "ts": time.time(),
             "requirement": requirement,
         }
+        try:
+            self.state.save()
+        except Exception:
+            pass
+        logger.info(f"{TAG} 视频追问已挂起 umo={umo} 要求={requirement[:40]}")
         yield event.plain_result(self.VIDEO_ASK)
 
     async def _handle_video_answer(self, event: AstrMessageEvent, umo: str,
