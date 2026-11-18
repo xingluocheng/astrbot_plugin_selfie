@@ -1,3 +1,19 @@
+## 1.1.3
+
+### 改进：视频提示词按「具体动作」扩写
+
+- 判断模型新增视频专用规则：一句里至少两个连续动作，不停在名词上
+- 道具类要求会展开成完整过程，例如
+  「拿假鸡巴插小穴」→ dildo sliding into her pussy, slow in-and-out thrusting,
+  pussy stretching around the dildo, hips rocking with each thrust
+- 自动补身体反应：moaning, back arching, thighs trembling, toes curling
+- 自动锁机位：same camera angle, steady framing, no camera movement
+- 明令不要写新道具/新场景，减少模型自己加东西的概率
+
+### 调整：工作流参数
+
+- `ref_image_size` 由 match 改成 max，首帧参与每一步，人物与服装更稳
+
 ## 1.1.2
 
 ### 新增：能读聊天里的图片
