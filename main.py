@@ -272,6 +272,41 @@ class SelfiePlugin(Star):
         return bool(self._cfg("nsfw_enabled", True))
 
     # ------------------------------------------------------------- 观察
+
+    # ------------------------------------------------------------- 聊天图片
+    async def _save_chat_images(self, event, umo: str) -> list[Path]:
+        """把这条消息里的图片存下来，返回本地路径。"""
+        saved: list[Path] = []
+        try:
+            chain = getattr(getattr(event, "message_obj", None), "message", None) or []
+        except Exception:
+            chain = []
+        chat_dir = self.data_dir / "chat_images"
+        chat_dir.mkdir(parents=True, exist_ok=True)
+        for comp in chain:
+            if not isinstance(comp, Image):
+                continue
+            try:
+                path = await comp.convert_to_file_path()
+                if not path:
+                    continue
+                src = Path(path)
+                if not src.exists():
+                    continue
+                stamp = int(time.time() * 1000)
+                dst = chat_dir / f"chat-{stamp}.png"
+                dst.write_bytes(src.read_bytes())
+                saved.append(dst)
+            except Exception as exc:
+                logger.debug(f"{TAG} 聊天图片落盘失败：{exc}")
+        if saved:
+            self.state.data[f"chat_image:{umo}"] = {
+                "path": str(saved[-1]),
+                "ts": time.time(),
+            }
+            logger.info(f"{TAG} 收到聊天图片：{saved[-1].name}")
+        return saved
+
     @filter.event_message_type(EventMessageType.ALL)
     async def on_message(self, event: AstrMessageEvent):
         if not bool(self._cfg("enabled", True)):
@@ -288,6 +323,13 @@ class SelfiePlugin(Star):
         umo = getattr(event, "unified_msg_origin", "") or ""
         if not umo:
             return
+
+        # 聊天里发的图：先落盘，后面判断/视频都能用
+        imgs: list[Path] = []
+        try:
+            imgs = await self._save_chat_images(event, umo)
+        except Exception as exc:
+            logger.debug(f"{TAG} 读聊天图片出错：{exc}")
 
         # /视频 的追问：这里等 1/2 + 描述（必须在缓冲之前处理）
         pending_key = f"video_pending:{umo}"
@@ -307,7 +349,10 @@ class SelfiePlugin(Star):
         except Exception:
             speaker = "群友"
         buf = self._buffers.setdefault(umo, [])
-        buf.append(f"{speaker}: {text[:200]}")
+        if imgs:
+            buf.append(f"{speaker}: [发了{len(imgs)}张图] {text[:180]}")
+        else:
+            buf.append(f"{speaker}: {text[:200]}")
         del buf[:-30]
 
         # 只用指令模式：平时聊天不自动拍图（也就不动表情包）
@@ -814,8 +859,15 @@ class SelfiePlugin(Star):
             try:
                 first = None
                 if choice == "1":
+                    chat = self.state.data.get(f"chat_image:{umo}") or {}
+                    chat_path = str(chat.get("path") or "")
+                    chat_ts = float(chat.get("ts") or 0)
                     last = str(self.state.data.get("last_path", "") or "")
-                    if last and Path(last).exists():
+                    last_ts = float(self.state.data.get("last_at") or 0)
+                    if chat_path and Path(chat_path).exists() and chat_ts >= last_ts:
+                        first = Path(chat_path)
+                        logger.info(f"{TAG} 首帧用聊天里发的那张：{first.name}")
+                    elif last and Path(last).exists():
                         first = Path(last)
                 if first is None:
                     first = await self.make_image(video_prompt, tag="vfirst")
