@@ -40,6 +40,20 @@ class SelfiePlugin(Star):
         logger.info(f"{TAG} 已加载，第 {self._cfg('lora_step', 12)} 档 / 权重 {self._cfg('lora_strength', 0.7)}")
 
     # ------------------------------------------------------------- 配置
+    def _raw_text(self, event) -> str:
+        """把消息里所有纯文本拼起来；拿不到就退回 message_str。"""
+        try:
+            parts = []
+            for comp in (getattr(getattr(event, "message_obj", None), "message", None) or []):
+                if isinstance(comp, Plain):
+                    parts.append(str(getattr(comp, "text", "") or ""))
+            text = "".join(parts).strip()
+            if text:
+                return text
+        except Exception:
+            pass
+        return str(getattr(event, "message_str", "") or "").strip()
+
     def _cfg(self, key: str, default=None):
         value = self.config.get(key, default) if isinstance(self.config, dict) else default
         return default if value is None or value == "" else value
@@ -610,7 +624,7 @@ class SelfiePlugin(Star):
             yield event.plain_result("自拍功能关着。")
             return
         umo = getattr(event, "unified_msg_origin", "") or ""
-        raw = getattr(event, "message_str", "") or ""
+        raw = self._raw_text(event)
         requirement = raw.replace("/自拍", "").replace("自拍", "").strip()
         if requirement and self._is_nsfw_request(requirement) and not self._nsfw_on():
             yield event.plain_result(str(self._cfg("nsfw_reject_text", "这个不拍啦，说点别的嘛")))
@@ -796,8 +810,9 @@ class SelfiePlugin(Star):
             yield event.plain_result("视频功能关着。")
             return
         umo = getattr(event, "unified_msg_origin", "") or ""
-        raw = getattr(event, "message_str", "") or ""
+        raw = self._raw_text(event)
         requirement = raw.replace("/视频", "").strip()
+        logger.info(f"{TAG} cmd_video 收到原文：{raw[:60]} → 参数：{requirement[:50]}")
 
         # 支持一步到位：/视频 1 描述  或  /视频 2 描述
         head = requirement[:1]
